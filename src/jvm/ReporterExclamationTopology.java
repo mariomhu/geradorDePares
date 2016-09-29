@@ -92,6 +92,8 @@ public class ReporterExclamationTopology {
       idReg = Integer.toString(Integer.valueOf(jedis.dbSize().toString())+1);
       jedis.lpush(mutex,mutex);
       jedis.set(idReg,idReg+separador+sentence);
+      jedis.select(2);
+      jedis.set(idReg,idReg+separador+sentence); 
       jedis.select(3);
       for(i = 0;i<reg.length;i++){
           if (!jedis.exists(reg[i])){
