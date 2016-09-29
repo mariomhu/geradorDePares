@@ -63,18 +63,15 @@ public class ProcessaBolt extends BaseRichBolt
          int posicaoAtualizada;
          int aux;
          boolean ordenar = false;
-         StringBuilder strBuilder;
+         StringBuilder strBuilder = new StringBuilder();
 
-
+      //
          jedis.select(2);
-         if(jedis.zrank("rank",chave)!=null)
-             posicao = Integer.valueOf(jedis.zrank("rank",chave).toString());
-         else
-             posicao = 1;
-    //    if (posicao >=0)
+        //  if(jedis.zrank("rank",chave)!=null)
+              posicao = Integer.valueOf(jedis.zrank("rank",chave).toString());
+        //  else
+        //      posicao = 1;
             jedis.zincrby("rank",1,chave);
-  //      else
-    //        jedis.zadd("rank",1,chave);
         posicaoAtualizada = Integer.valueOf(jedis.zrank("rank",chave).toString());
 
          if (posicao != posicaoAtualizada)
@@ -82,55 +79,64 @@ public class ProcessaBolt extends BaseRichBolt
 
          for(i=1;i<regs.length;i++){
              //busca o registro
-             jedis.blpop(30,"R"+regs[i]);
+
+            // jedis.blpop(30,"R"+regs[i]);
              registro = jedis.get(regs[i]);
              info[i]  = registro.split(separador);
              infoInt[i] = new int[info[i].length];
+
              //armazena o registro num array de arrays
-             for(j=0;j<infoInt[i].length-1;i++)
-                 infoInt[i][1] = Integer.valueOf(info[i][j]);
-        //     //verifica se precisa ordenar os registros pré-ordenados
-        //     if (ordenar && i < regs.length - 1){
-        //         for(j=1;j<infoInt[i].length-1;i++){
-        //             if(infoInt[i][j] == Integer.valueOf(chave))
-        //                 if(infoInt[i][j] > infoInt[i][j+1]){
-        //                     aux             = infoInt[i][j];
-        //                     infoInt[i][j]   = infoInt[i][j+1];
-        //                     infoInt[i][j+1] = aux;
-        //                 }
-        //         }
-        //         strBuilder = new StringBuilder();
-        //         strBuilder.append(Integer.toString(infoInt[i][0]));
-        //         for(j=1;j<infoInt[i].length;i++){
-        //             strBuilder.append(" ");
-        //             strBuilder.append(Integer.toString(infoInt[i][j]));
-        //         }
-        //         jedis.set(regs[i],strBuilder.toString());
-        //     }
-        //     jedis.lpush(regs[i],regs[i]);
+             for(j=0;j<infoInt[i].length;j++){
+//infoInt[30][1000000] = 3;
+                 infoInt[i][j] = Integer.valueOf(info[i][j]);
+             }
+             //verifica se precisa ordenar os registros pré-ordenados
+            //  if (ordenar && i < regs.length - 1){
+              if (i < regs.length - 1){
+                  for(j=1;j<infoInt[i].length-1;j++){
+                      if(infoInt[i][j] == Integer.valueOf(chave))
+                          if(infoInt[i][j] > infoInt[i][j+1]){
+                              aux             = infoInt[i][j];
+                              infoInt[i][j]   = infoInt[i][j+1];
+                              infoInt[i][j+1] = aux;
+                          }
+                  }
+            //      strBuilder = new StringBuilder();
+            //      strBuilder.append(Integer.toString(infoInt[i][0]));
+            //      for(j=1;j<infoInt[i].length;i++){
+            //          strBuilder.append(" ");
+            //          strBuilder.append(Integer.toString(infoInt[i][j]));
+            //      }
+            //      jedis.set(regs[i],strBuilder.toString());
+              }
+            //  jedis.lpush("R"+regs[i],"R"+regs[i]);
          }
-        // //ordena o novo registro inserido
-        // jedis.blpop(30,regs[regs.length-1]);
-        // boolean change = false;
-        // int novo = infoInt.length-1;
-        // do{
-        //     for(i=1;i<infoInt[novo].length-1;i++){
-        //         if(infoInt[novo][i] > infoInt[novo][i]+1){
-        //             aux                = infoInt[novo][i];
-        //             infoInt[novo][i]   = infoInt[novo][i+1];
-        //             infoInt[novo][i+1] = aux;
-        //             change = true;
-        //         }
-        //     }
-        // }while(change);
-        // strBuilder = new StringBuilder();
-        // strBuilder.append(Integer.toString(infoInt[novo][0]));
-        // for(j=1;j<infoInt[novo].length;i++){
-        //     strBuilder.append(" ");
-        //     strBuilder.append(Integer.toString(infoInt[novo][j]));
-        // }
-        // jedis.set(regs[novo],strBuilder.toString());
-        // jedis.lpush(regs[regs.length-1],regs[regs.length-1]);
+        //ordena o novo registro inserido
+      //   jedis.blpop(30,"R"+regs[regs.length-1]);
+         boolean change = false;
+         int novo = infoInt.length-1;
+         do{
+             for(i=1;i<infoInt[novo].length-1;i++){
+                 if(infoInt[novo][i] > infoInt[novo][i]+1){
+                     aux                = infoInt[novo][i];
+                     infoInt[novo][i]   = infoInt[novo][i+1];
+                     infoInt[novo][i+1] = aux;
+                     change = true;
+                }
+            }
+        }while(change);
+        String s = Integer.toString(infoInt[novo][0]);
+        for(j=1;j<infoInt[novo].length;i++){
+            s += " "+Integer.toString(infoInt[novo][j]);
+        }
+      /*  strBuilder.delete(0,strBuilder.length());
+        strBuilder.append(Integer.toString(infoInt[novo][0]));
+        for(j=1;j<infoInt[novo].length;i++){
+            strBuilder.append(" ");
+            strBuilder.append(Integer.toString(infoInt[novo][j]));
+        }*/
+        jedis.set(regs[novo],strBuilder.toString());
+    //    jedis.lpush("R"+regs[regs.length-1],"R"+regs[regs.length-1]);
         pool.returnResource(jedis);
     }
 
