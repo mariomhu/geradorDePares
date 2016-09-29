@@ -81,8 +81,6 @@ public class ReporterExclamationTopology {
       String sentence  = tuple.getString(0);
       Jedis jedis      = pool.getResource();
       String[] reg     = sentence.split(separador);
-      int[] regInt     = new int[reg.length];
-      String[] regMap  = new String[reg.length];
       Map<String, Integer> ocorrencias;
       int i;
       String item, idReg;
@@ -93,42 +91,19 @@ public class ReporterExclamationTopology {
       jedis.lpush(mutex,mutex);
       jedis.set(idReg,idReg+separador+sentence);
       jedis.select(2);
-      jedis.set(idReg,idReg+separador+sentence); 
-      jedis.select(3);
-      for(i = 0;i<reg.length;i++){
-          if (!jedis.exists(reg[i])){
-              jedis.blpop(30,mutex);
-              regMap[i] = Integer.toString(Integer.parseInt(jedis.dbSize().toString())+1);
-              jedis.lpush(mutex,mutex);
-              jedis.set(reg[i],regMap[i]);
-          }
-          else
-              regMap[i] = jedis.get(reg[i]).toString();
-      }
-
-      StringBuilder strBuilder = new StringBuilder();
-      strBuilder.append(idReg);
-      strBuilder.append(" ");
-      for (i = 0;i<regMap.length; i++) {
-          strBuilder.append(regMap[i]);
-          if (i<reg.length - 1)
-              strBuilder.append(" ");
-      }
-      String regMapeado = strBuilder.toString();
-      jedis.select(2);
+      jedis.set(idReg,idReg+separador+sentence);
       jedis.lpush("R"+idReg,"R"+idReg);
-      jedis.set(idReg,regMapeado);
 
-      jedis.select(4);
+      jedis.select(3);
       ocorrencias = new HashMap<String, Integer>();
-      for (i = 0;i<regMap.length; i++) {
-          if (ocorrencias.get(regMap[i]) == null) {
-              ocorrencias.put(regMap[i], 1);
-              if (jedis.exists(regMap[i]))
-                  jedis.append(regMap[i]," "+idReg);
+      for (i = 0;i<reg.length; i++) {
+          if (ocorrencias.get(reg[i]) == null) {
+              ocorrencias.put(reg[i], 1);
+              if (jedis.exists(reg[i]))
+                  jedis.append(reg[i]," "+idReg);
               else
-                  jedis.set(regMap[i],idReg);
-              _collector.emit(tuple, new Values(regMap[i]+separador+jedis.get(regMap[i]).toString()));
+                  jedis.set(reg[i],idReg);
+              _collector.emit(tuple, new Values(reg[i]+separador+jedis.get(reg[i])));
           }
       }
 

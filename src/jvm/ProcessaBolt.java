@@ -81,7 +81,7 @@ public class ProcessaBolt extends BaseRichBolt
              //busca o registro
 
             // jedis.blpop(30,"R"+regs[i]);
-             registro = jedis.get(regs[i]);
+    /*         registro = jedis.get(regs[i]);
              info[i]  = registro.split(separador);
              infoInt[i] = new int[info[i].length];
 
@@ -127,7 +127,7 @@ public class ProcessaBolt extends BaseRichBolt
         }while(change);
         String s = Integer.toString(infoInt[novo][0]);
         for(j=1;j<infoInt[novo].length;i++){
-            s += " "+Integer.toString(infoInt[novo][j]);
+            s += " "+Integer.toString(infoInt[novo][j]);*/
         }
       /*  strBuilder.delete(0,strBuilder.length());
         strBuilder.append(Integer.toString(infoInt[novo][0]));
@@ -135,7 +135,7 @@ public class ProcessaBolt extends BaseRichBolt
             strBuilder.append(" ");
             strBuilder.append(Integer.toString(infoInt[novo][j]));
         }*/
-        jedis.set(regs[novo],strBuilder.toString());
+    //    jedis.set(regs[novo],strBuilder.toString());
     //    jedis.lpush("R"+regs[regs.length-1],"R"+regs[regs.length-1]);
         pool.returnResource(jedis);
     }
