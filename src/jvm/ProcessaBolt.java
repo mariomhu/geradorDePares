@@ -54,30 +54,129 @@ public class ProcessaBolt extends BaseRichBolt
          String sentence  = tuple.getString(0);
          String[] regs    = sentence.split(separador);
          String chave     = regs[0];
-         String[][] info  = new String[regs.length][];
-         int[][] infoInt  = new int[regs.length][];
+         //String[][] info  = new String[regs.length][];
+
+        // int[][] infoInt  = new int[regs.length][];
          int i,j;
          Jedis jedis      = pool.getResource();
          String registro;
          int posicao;
          int posicaoAtualizada;
          int aux;
+         int n = regs.length -1;
          boolean ordenar = false;
+         boolean change = false;
          StringBuilder strBuilder = new StringBuilder();
+         Map<String, Integer> ocorrencias;
+         String[] info;
+         int[] infoInt;
+         String[] regComp;
+         int[] regCompInt;
+         int frequencia,agoraVai;
+         String registros, idReg;
+         String auxString;
+         String saida, saida1, saida2,auxS;
 
-      //
+         ocorrencias = new HashMap<String, Integer>();
+
          jedis.select(2);
-        //  if(jedis.zrank("rank",chave)!=null)
-              posicao = Integer.valueOf(jedis.zrank("rank",chave).toString());
-        //  else
-        //      posicao = 1;
-            jedis.zincrby("rank",1,chave);
-        posicaoAtualizada = Integer.valueOf(jedis.zrank("rank",chave).toString());
 
-         if (posicao != posicaoAtualizada)
-             ordenar = true;
+         registro = jedis.get(regs[n]);
+         info     = registro.split(separador);
+         infoInt  = new int[info.length];
+        for(i=1;i<info.length;i++){
+             if (ocorrencias.get(info[i]) == null) {
 
-         for(i=1;i<regs.length;i++){
+                 jedis.select(2);
+                 auxS = jedis.zrank("rank",info[i]).toString();
+                 infoInt[i] = Integer.valueOf(auxS);
+
+                 ocorrencias.put(info[i], infoInt[i]);
+             }
+         }
+        do{
+             change = false;
+             for(i=1;i<infoInt.length-1;i++){
+               jedis.select(10);
+               jedis.set("ORDER1","ORDER1");
+                 if(infoInt[i] > infoInt[i]+1){
+
+                     aux          = infoInt[i];
+                     infoInt[i]   = infoInt[i+1];
+                     infoInt[i+1] = aux;
+
+                     auxString = info[i];
+                     info[i]   = info[i+1];
+                     info[i+1] = auxString;
+
+                     change = true;
+                }
+            }
+        }while(change);
+
+        if (regs.length > 3){
+         for(i=2;i<regs.length -1;i++){
+          //   jedis.select(8);
+          //   jedis.set("teste",regs[0]+"   Reg:"+regs[i]+"   Pos:"+Integer.valueOf(i));
+          //   jedis.set("teste2",sentence);
+               jedis.select(2);
+             registros   = jedis.get(regs[i]);
+             regComp     = registros.split(separador);
+             regCompInt  = new int[regComp.length];
+            //    jedis.select(8);
+            //    jedis.set("teste",registros);
+
+            for(j=1;j<regComp.length;j++){
+            //    jedis.set("teste2",regComp[j]+"   SIZE:"+Integer.valueOf(info.length)+"    j:"+Integer.valueOf(j));
+                 if (ocorrencias.get(regComp[j]) == null) {
+                     auxS = jedis.zrank("rank",regComp[j]).toString();
+                     //frequencia = Integer.valueOf();
+                     regCompInt[j] = Integer.valueOf(auxS);
+                     //regCompInt[i] = frequencia;
+                     ocorrencias.put(regComp[j], regCompInt[j]);
+                 }
+             }
+
+           do{
+                 change = false;
+                 for(j=1;j<regCompInt.length-2;j++){
+                   jedis.select(10);
+                   jedis.set("ORDER2","ORDER2");
+                     if(infoInt[j] > infoInt[j]+1){
+
+                         aux             = regCompInt[j];
+                         regCompInt[j]   = regCompInt[j+1];
+                         regCompInt[j+1] = aux;
+
+                         auxString    = regComp[j];
+                         regComp[j]   = regComp[j+1];
+                         regComp[j+1] = auxString;
+
+                         change = true;
+                    }
+                }
+             }while(change);
+             saida1 = "";
+             saida2 = "";
+             int k;
+             for(k=0;k<info.length;k++)
+                 saida1 += info[k] + " ";
+             for(k=0;k<regComp.length;k++)
+                 saida2 += regComp[k] + " ";
+             saida = saida1 + "|" + saida2;
+             jedis.select(9);
+             idReg = Integer.toString(Integer.valueOf(jedis.dbSize().toString())+1);
+             jedis.set(idReg,saida);
+           }
+          }
+        //     */
+        /*     saida1 = "";
+             jedis.select(5);
+             idReg = Integer.toString(Integer.valueOf(jedis.dbSize().toString())+1);
+             for(i=0;i<info.length;i++)
+                 saida1 += info[i] + " ";
+             jedis.set(idReg,saida1); */
+             //_collector.emit(tuple, new Values(reg[i]+separador+jedis.get(reg[i])));
              //busca o registro
 
             // jedis.blpop(30,"R"+regs[i]);
@@ -128,7 +227,7 @@ public class ProcessaBolt extends BaseRichBolt
         String s = Integer.toString(infoInt[novo][0]);
         for(j=1;j<infoInt[novo].length;i++){
             s += " "+Integer.toString(infoInt[novo][j]);*/
-        }
+      //  }
       /*  strBuilder.delete(0,strBuilder.length());
         strBuilder.append(Integer.toString(infoInt[novo][0]));
         for(j=1;j<infoInt[novo].length;i++){
@@ -142,6 +241,7 @@ public class ProcessaBolt extends BaseRichBolt
 
     public void declareOutputFields(OutputFieldsDeclarer declarer)
     {
+      declarer.declare(new Fields("exclamated-word"));
       // nothing to add - since it is the final bolt
     }
 }

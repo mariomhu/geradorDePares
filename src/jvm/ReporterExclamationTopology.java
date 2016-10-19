@@ -92,16 +92,20 @@ public class ReporterExclamationTopology {
       jedis.set(idReg,idReg+separador+sentence);
       jedis.select(2);
       jedis.set(idReg,idReg+separador+sentence);
-      jedis.lpush("R"+idReg,"R"+idReg);
+  //    jedis.lpush("R"+idReg,"R"+idReg);
 
-      jedis.select(3);
+
       ocorrencias = new HashMap<String, Integer>();
       for (i = 0;i<reg.length; i++) {
           if (ocorrencias.get(reg[i]) == null) {
               ocorrencias.put(reg[i], 1);
-              if (jedis.exists(reg[i]))
+              jedis.select(2);
+              jedis.zincrby("rank",1,reg[i]);
+              if (jedis.exists(reg[i])){
+                  jedis.select(3);
                   jedis.append(reg[i]," "+idReg);
-              else
+
+              }else
                   jedis.set(reg[i],idReg);
               _collector.emit(tuple, new Values(reg[i]+separador+jedis.get(reg[i])));
           }
@@ -124,9 +128,9 @@ public class ReporterExclamationTopology {
 
     builder.setSpout("entrada", new RandomSentenceSpout(), 1);
 
-    builder.setBolt("bolt-indice", new IndiceBolt(), 3).shuffleGrouping("entrada");
+    builder.setBolt("bolt-indice", new IndiceBolt(), 1).shuffleGrouping("entrada");
 
-    builder.setBolt("bolt-processa", new ProcessaBolt(), 3).shuffleGrouping("bolt-indice");
+    builder.setBolt("bolt-processa", new ProcessaBolt(), 1).shuffleGrouping("bolt-indice");
 
     Config conf = new Config();
 
