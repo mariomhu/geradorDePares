@@ -80,27 +80,38 @@ public class ProcessaBolt extends BaseRichBolt
          ocorrencias = new HashMap<String, Integer>();
 
          jedis.select(2);
-
+         int cont = 1;
+         int cont2 = 1;
          registro = jedis.get(regs[n]);
          info     = registro.split(separador);
          infoInt  = new int[info.length];
+         cont2++;
         for(i=1;i<info.length;i++){
              if (ocorrencias.get(info[i]) == null) {
-
                  jedis.select(2);
-                 auxS = jedis.zrank("rank",info[i]).toString();
+                 auxS = "1";
+                 if (jedis.zrank("rank",info[i]) != null)
+                     auxS = jedis.zrank("rank",info[i]).toString();
                  infoInt[i] = Integer.valueOf(auxS);
-
                  ocorrencias.put(info[i], infoInt[i]);
-             }
+
+             }else
+                 infoInt[i] = ocorrencias.get(info[i]);
+
+                jedis.set("CONT","T"+Integer.valueOf(cont));
+                cont++;
          }
+         String registroInt = " | ";
         do{
              change = false;
-             for(i=1;i<infoInt.length-1;i++){
-               jedis.select(10);
-               jedis.set("ORDER1","ORDER1");
-                 if(infoInt[i] > infoInt[i]+1){
+             jedis.select(10);
 
+             idReg = Integer.toString(Integer.valueOf(jedis.dbSize().toString())+1);
+
+             for(i=1;i<infoInt.length-1;i++){
+
+                 if(infoInt[i] > infoInt[i+1]){
+                    // jedis.set("MAIOR","MAIOR");
                      aux          = infoInt[i];
                      infoInt[i]   = infoInt[i+1];
                      infoInt[i+1] = aux;
@@ -113,37 +124,34 @@ public class ProcessaBolt extends BaseRichBolt
                 }
             }
         }while(change);
+    //    jedis.set(idReg,registroInt);
+
 
         if (regs.length > 3){
          for(i=2;i<regs.length -1;i++){
-          //   jedis.select(8);
-          //   jedis.set("teste",regs[0]+"   Reg:"+regs[i]+"   Pos:"+Integer.valueOf(i));
-          //   jedis.set("teste2",sentence);
-               jedis.select(2);
+             jedis.select(2);
              registros   = jedis.get(regs[i]);
              regComp     = registros.split(separador);
              regCompInt  = new int[regComp.length];
-            //    jedis.select(8);
-            //    jedis.set("teste",registros);
+
 
             for(j=1;j<regComp.length;j++){
-            //    jedis.set("teste2",regComp[j]+"   SIZE:"+Integer.valueOf(info.length)+"    j:"+Integer.valueOf(j));
                  if (ocorrencias.get(regComp[j]) == null) {
                      auxS = jedis.zrank("rank",regComp[j]).toString();
                      //frequencia = Integer.valueOf();
                      regCompInt[j] = Integer.valueOf(auxS);
                      //regCompInt[i] = frequencia;
                      ocorrencias.put(regComp[j], regCompInt[j]);
-                 }
+                 }else
+                     regCompInt[j] = ocorrencias.get(regComp[j]);
              }
 
            do{
                  change = false;
                  for(j=1;j<regCompInt.length-2;j++){
-                   jedis.select(10);
-                   jedis.set("ORDER2","ORDER2");
-                     if(infoInt[j] > infoInt[j]+1){
-
+                     if(regCompInt[j] > regCompInt[j+1]/* || (regCompInt[j] == regCompInt[j+1] && regComp[j] == info[j])*/){
+                          jedis.select(10);
+                          jedis.set("MAIOR","MAIOR");
                          aux             = regCompInt[j];
                          regCompInt[j]   = regCompInt[j+1];
                          regCompInt[j+1] = aux;
@@ -161,8 +169,10 @@ public class ProcessaBolt extends BaseRichBolt
              int k;
              for(k=0;k<info.length;k++)
                  saida1 += info[k] + " ";
+             jedis.set(info[0],saida1);
              for(k=0;k<regComp.length;k++)
                  saida2 += regComp[k] + " ";
+             jedis.set(regComp[0],saida2);
              saida = saida1 + "|" + saida2;
              jedis.select(9);
              idReg = Integer.toString(Integer.valueOf(jedis.dbSize().toString())+1);
