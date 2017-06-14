@@ -58,15 +58,13 @@ public class ReporterExclamationTopology {
       String mutex         = "MUTEX"; //token para mutex
       Jedis jedis      = pool.getResource();
       int db;
-
       jedis.select(1);
-      jedis.lpush(mutex,mutex);
+      jedis.flushDB();
       jedis.select(2);
-      jedis.lpush(mutex,mutex);
+      jedis.flushDB();
       jedis.select(3);
-      jedis.lpush(mutex,mutex);
-      jedis.select(4);
-      jedis.lpush(mutex,mutex);
+      jedis.flushDB();
+
       pool.returnResource(jedis);
 
     }
@@ -85,7 +83,34 @@ public class ReporterExclamationTopology {
       int i;
       String item, idReg;
 
+      idReg = reg[0];
       jedis.select(1);
+      jedis.set(idReg,sentence);
+      jedis.select(2);
+      jedis.set(idReg,sentence);
+
+
+      ocorrencias = new HashMap<String, Integer>();
+      for (i = 1;i<reg.length; i++) {
+          if (ocorrencias.get(reg[i]) == null) {
+              ocorrencias.put(reg[i], 1);
+              jedis.select(2);
+              jedis.zincrby("rank",1,reg[i]);
+
+              if(reg[i].length() >= 3){
+                if (jedis.exists(reg[i])){
+                    jedis.select(3);
+                    jedis.append(reg[i]," "+idReg);
+
+                }else
+                    jedis.set(reg[i],idReg);
+                _collector.emit(tuple, new Values(reg[i]+separador+jedis.get(reg[i])));
+              }
+          }
+      }
+
+
+/*      jedis.select(1);
       jedis.blpop(30,mutex);
       idReg = Integer.toString(Integer.valueOf(jedis.dbSize().toString())+1);
       jedis.lpush(mutex,mutex);
@@ -110,7 +135,7 @@ public class ReporterExclamationTopology {
               _collector.emit(tuple, new Values(reg[i]+separador+jedis.get(reg[i])));
           }
       }
-
+*/
       pool.returnResource(jedis);
     }
 
@@ -131,6 +156,12 @@ public class ReporterExclamationTopology {
     builder.setBolt("bolt-indice", new IndiceBolt(), 1).shuffleGrouping("entrada");
 
     builder.setBolt("bolt-processa", new ProcessaBolt(), 1).shuffleGrouping("bolt-indice");
+
+    builder.setBolt("bolt-tamanho", new SizePositionBolt(), 1).shuffleGrouping("bolt-processa");
+
+    builder.setBolt("bolt-prefixo", new PrefixBolt(), 1).shuffleGrouping("bolt-tamanho");
+
+    builder.setBolt("bolt-sufixo", new SufixBolt(), 1).shuffleGrouping("bolt-prefixo");
 
     Config conf = new Config();
 

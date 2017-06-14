@@ -1,5 +1,8 @@
+/home/db-user/repositório/geradorDePares/src/jvm/PrefixBolt.java
+/home/db-user/repositório/geradorDePares/src/jvm/SizePositionBolt.java
 /home/db-user/repositório/geradorDePares/src/jvm/ReporterExclamationTopology.java
 /home/db-user/repositório/geradorDePares/src/jvm/ProcessaBolt.java
 /home/db-user/repositório/geradorDePares/src/jvm/bolt/ReportBolt.java
+/home/db-user/repositório/geradorDePares/src/jvm/SufixBolt.java
 /home/db-user/repositório/geradorDePares/src/jvm/spout/RandomSentenceSpout.java
 /home/db-user/repositório/geradorDePares/src/jvm/ExclamationTopology.java

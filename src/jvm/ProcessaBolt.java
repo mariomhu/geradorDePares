@@ -42,9 +42,8 @@ public class ProcessaBolt extends BaseRichBolt
         TopologyContext         topologyContext,
         OutputCollector         outputCollector)
     {
+        _collector = outputCollector;
         pool = new JedisPool("127.0.0.1");
-        String mutex     = "MUTEX"; //token para mutex
-
     }
 
     @Override
@@ -73,13 +72,14 @@ public class ProcessaBolt extends BaseRichBolt
          String[] regComp;
          int[] regCompInt;
          int frequencia,agoraVai;
+         int k;
          String registros, idReg;
          String auxString;
          String saida, saida1, saida2,auxS;
 
          ocorrencias = new HashMap<String, Integer>();
 
-         jedis.select(2);
+         jedis.select(1);
          int cont = 1;
          int cont2 = 1;
          registro = jedis.get(regs[n]);
@@ -125,31 +125,42 @@ public class ProcessaBolt extends BaseRichBolt
             }
         }while(change);
     //    jedis.set(idReg,registroInt);
+        saida1 = "";
+        for(k=0;k<info.length;k++){
+            saida1 += info[k];
+            if(k<info.length-1)
+               saida1 += " ";
+        }
+        jedis.select(1);
+        jedis.set(info[0],saida1);
 
 
         if (regs.length > 3){
          for(i=2;i<regs.length -1;i++){
-             jedis.select(2);
-             registros   = jedis.get(regs[i]);
-             regComp     = registros.split(separador);
-             regCompInt  = new int[regComp.length];
+              jedis.select(1);
+              registros   = jedis.get(regs[i]);
+              regComp     = registros.split(separador);
+              regCompInt  = new int[regComp.length];
 
 
-            for(j=1;j<regComp.length;j++){
-                 if (ocorrencias.get(regComp[j]) == null) {
-                     auxS = jedis.zrank("rank",regComp[j]).toString();
-                     //frequencia = Integer.valueOf();
-                     regCompInt[j] = Integer.valueOf(auxS);
-                     //regCompInt[i] = frequencia;
-                     ocorrencias.put(regComp[j], regCompInt[j]);
-                 }else
-                     regCompInt[j] = ocorrencias.get(regComp[j]);
-             }
+             for(j=1;j<regComp.length;j++){
+                  if (ocorrencias.get(regComp[j]) == null) {
+                      jedis.select(7);
+                      jedis.set("chave",regComp[j]);
+                      jedis.select(2);
+                      auxS = jedis.zrank("rank",regComp[j]).toString();
+                      //frequencia = Integer.valueOf();
+                      regCompInt[j] = Integer.valueOf(auxS);
+                      //regCompInt[i] = frequencia;
+                      ocorrencias.put(regComp[j], regCompInt[j]);
+                  }else
+                      regCompInt[j] = ocorrencias.get(regComp[j]);
+              }
 
-           do{
-                 change = false;
-                 for(j=1;j<regCompInt.length-2;j++){
-                     if(regCompInt[j] > regCompInt[j+1]/* || (regCompInt[j] == regCompInt[j+1] && regComp[j] == info[j])*/){
+            do{
+                  change = false;
+                  for(j=1;j<regCompInt.length-1;j++){
+                      if(regCompInt[j] > regCompInt[j+1]/* || (regCompInt[j] == regCompInt[j+1] && regComp[j] == info[j])*/){
                           jedis.select(10);
                           jedis.set("MAIOR","MAIOR");
                          aux             = regCompInt[j];
@@ -164,19 +175,28 @@ public class ProcessaBolt extends BaseRichBolt
                     }
                 }
              }while(change);
-             saida1 = "";
-             saida2 = "";
-             int k;
-             for(k=0;k<info.length;k++)
-                 saida1 += info[k] + " ";
-             jedis.set(info[0],saida1);
-             for(k=0;k<regComp.length;k++)
-                 saida2 += regComp[k] + " ";
+
+              saida2 = "";
+          //
+
+             for(k=0;k<regComp.length;k++){
+                 saida2 += regComp[k];
+                 if(k<regComp.length-1)
+                    saida2 += " ";
+             }
+
+             jedis.select(1);
              jedis.set(regComp[0],saida2);
              saida = saida1 + "|" + saida2;
-             jedis.select(9);
-             idReg = Integer.toString(Integer.valueOf(jedis.dbSize().toString())+1);
-             jedis.set(idReg,saida);
+              jedis.select(9);
+          //    idReg = Integer.toString(Integer.valueOf(jedis.dbSize().toString())+1);
+              jedis.set("CHAVE",chave);
+              jedis.set("SAIDA1",saida1);
+              jedis.set("SAIDA2",saida2);
+              //jedis.set("SAIDA",chave+"|"+saida);
+              //String emissao = chave+"|"+saida;
+              // _collector.emit(tuple, new Values(chave+"|"+saida));
+              _collector.emit(tuple, new Values(chave,saida1,saida2));
            }
           }
         //     */
@@ -251,7 +271,8 @@ public class ProcessaBolt extends BaseRichBolt
 
     public void declareOutputFields(OutputFieldsDeclarer declarer)
     {
-      declarer.declare(new Fields("exclamated-word"));
+      declarer.declare(new Fields("chave","saida1","saida2"));
+      // declarer.declare(new Fields("exclamated-word"));
       // nothing to add - since it is the final bolt
     }
 }

@@ -1,7 +1,10 @@
 udacity/storm/ProcessaBolt.class
 udacity/storm/ReporterExclamationTopology$IndiceBolt.class
 udacity/storm/spout/RandomSentenceSpout.class
+udacity/storm/SizePositionBolt.class
 udacity/storm/ReporterExclamationTopology.class
 udacity/storm/ExclamationTopology.class
 udacity/storm/ReportBolt.class
+udacity/storm/PrefixBolt.class
 udacity/storm/ExclamationTopology$ExclamationBolt.class
+udacity/storm/SufixBolt.class
