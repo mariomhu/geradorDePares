@@ -135,7 +135,7 @@ public class ProcessaBolt extends BaseRichBolt
         jedis.set(info[0],saida1);
 
 
-        if (regs.length > 3){
+        if (regs.length >= 3){
          for(i=2;i<regs.length -1;i++){
               jedis.select(1);
               registros   = jedis.get(regs[i]);

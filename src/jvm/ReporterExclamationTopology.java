@@ -96,10 +96,10 @@ public class ReporterExclamationTopology {
               ocorrencias.put(reg[i], 1);
               jedis.select(2);
               jedis.zincrby("rank",1,reg[i]);
-
+              jedis.select(3);
               if(reg[i].length() >= 3){
                 if (jedis.exists(reg[i])){
-                    jedis.select(3);
+
                     jedis.append(reg[i]," "+idReg);
 
                 }else
@@ -188,7 +188,7 @@ public class ReporterExclamationTopology {
       cluster.submitTopology("exclamation", conf, builder.createTopology());
 
       // let the topology run for 30 seconds. note topologies never terminate!
-      Thread.sleep(300000);
+      Thread.sleep(30000000);
 
       // kill the topology
       cluster.killTopology("exclamation");

@@ -52,11 +52,11 @@ public class SufixBolt extends BaseRichBolt
     public void execute(Tuple tuple)
     {
         Jedis jedis      = pool.getResource();
-        int offSet       = 3;
+        int offSet       = 7;
         int posMin       = offSet + 1;
-        int parmSearchDist = 1;
+        int parmSearchDist = 2;
         int parmNTerms   = 4;
-        int parmDist     = 3;
+        int parmDist     = 4;
         double size      = 3;
         double parmFreq  = 0.1;//porcentagem
         double frequencia;
@@ -86,10 +86,10 @@ public class SufixBolt extends BaseRichBolt
         if(sufSize1 <= 0 || sufSize2 <= 0)
             lOk = false;
         if(lOk){
-            if(sufSize1 <= sufSize2)
+        //    if(sufSize1 <= sufSize2)
                 minSize = sufSize1;
-            else
-                minSize = sufSize2;
+        //    else
+        //        minSize = sufSize2;
 
             if(minSize < parmNTerms)
                 pos = new int[minSize];
@@ -110,16 +110,19 @@ public class SufixBolt extends BaseRichBolt
                 else
                     i--;
             }
+
+            jedis.select(8);
             for(i=0;i<pos.length;i++){
                 for(j=pos[i]-parmDist;j<=pos[i]+parmDist;j++)
-                    if (pos[i] >= 0 && pos[i] <= reg1.length && j >= 0 && j <= reg2.length)
-                        if(reg1[pos[i]].equals(reg2[j])){
-                            lFound = true;
-                            encontrados++;
-                            break;
-                        }
+                    jedis.set("ERROR",registro1+"|"+registro2+"|i"+Integer.toString(i)+" j"+Integer.toString(j)+" r"+Integer.toString(randomMax)+" v"+Integer.toString(pos[i])+" m"+Integer.toString(minSize)+" pm"+Integer.toString(posMin));
+                     if (pos[i] > 0 && pos[i] < reg1.length && j > 0 && j < reg2.length)
+                         if(reg1[pos[i]].equals(reg2[j])){
+                             lFound = true;
+                             encontrados++;
+                             break;
+                         }
             }
-            jedis.select(8);
+
             String positions = "";
             for(i=0;i<pos.length;i++){
                 positions += Integer.toString(pos[i]) + " ";
@@ -130,7 +133,7 @@ public class SufixBolt extends BaseRichBolt
                 strAux = jedis.get("QTD");
                 qtd = Integer.valueOf(strAux);
                 jedis.set("QTD",Integer.toString(qtd+1));
-                jedis.set("PAR2",registro1+"/"+registro2+"/"+positions);
+                jedis.set("PAR2"+strAux,registro1+"/"+registro2+"/"+positions);
                 _collector.emit(tuple, new Values(registro1,registro2));
             }else{
                 jedis.set("FAL2",registro1+"/"+registro2+"/"+positions);

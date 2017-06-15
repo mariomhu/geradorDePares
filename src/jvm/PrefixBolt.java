@@ -44,14 +44,17 @@ public class PrefixBolt extends BaseRichBolt
     {
         _collector = outputCollector;
         pool = new JedisPool("127.0.0.1");
+        Jedis jedis      = pool.getResource();
+        jedis.select(8);
+        jedis.set("QTD1","0");
     }
 
     @Override
     public void execute(Tuple tuple)
     {
         Jedis jedis      = pool.getResource();
-        int prefSize     = 3;
-        double size      = 3;
+        int prefSize     = 7;
+        double size      = 7;
         double parmFreq  = 0.1;//porcentagem
         double frequencia;
         String separador = " ";
@@ -85,6 +88,11 @@ public class PrefixBolt extends BaseRichBolt
         if(frequencia > 0)
           jedis.set("FREQ",Double.toString(frequencia));
         if(frequencia/size > parmFreq){
+            int qtd;
+            String strAux;
+            strAux = jedis.get("QTD1");
+            qtd = Integer.valueOf(strAux);
+            jedis.set("QTD1",Integer.toString(qtd+1));
             jedis.set("PAR1",registro1+"/"+registro2);
             _collector.emit(tuple, new Values(registro1,registro2));
         }else{
