@@ -32,70 +32,109 @@ import com.lambdaworks.redis.RedisConnection;
  */
 public class SizePositionBolt extends BaseRichBolt
 {
-    OutputCollector _collector;
-    protected JedisPool pool;
+  OutputCollector _collector;
+  protected JedisPool pool;
+  protected int countS1, countS2, countS3;
 
-    @Override
-    public void prepare(
-        Map                     map,
-        TopologyContext         topologyContext,
-        OutputCollector         outputCollector)
-    {
-        _collector = outputCollector;
-        pool = new JedisPool("127.0.0.1");
+  @Override
+  public void prepare(
+      Map                     map,
+      TopologyContext         topologyContext,
+      OutputCollector         outputCollector)
+  {
+      _collector = outputCollector;
+      pool = new JedisPool("127.0.0.1");
+      countS1=0;
+      countS2=0;
+      countS3=0;
+  }
+
+  @Override
+  public void execute(Tuple tuple)
+  {
+      Jedis jedis      = pool.getResource();
+
+      String separador = " ";
+      Date d = new Date();
+
+      String chave     = tuple.getString(0);
+      String registro1 = tuple.getString(1);
+      String registro2 = tuple.getString(2);
+      String[] reg1    = registro1.split(separador);
+      String[] reg2    = registro2.split(separador);
+      boolean lOk      = true;
+      int i,j,p1=0,p2=9999,tamMax;
+
+      if (reg1.length > reg2.length)
+        tamMax = reg1.length;
+      else
+        tamMax = reg2.length;
+
+      int parmSize = (int) (tamMax*(1-0.3));
+      int parmDist = parmSize;
+
+      jedis.select(2);
+      String num1 = Integer.toString(countS1);
+      jedis.set("OKTAM/"+num1+"/"+registro1+"/"+registro2, "1");
+      jedis.set("COUNTS1",num1);
+      countS1++;
+
+      matchPair(reg1[0],reg2[0],registro1,registro2,jedis,"R");
+
+      if(reg1.length - reg2.length > parmSize || reg1.length - reg2.length < -parmSize){//Filtro de tamanho
+          lOk = false;
+      }if(lOk){
+          for(i=0;i<reg1.length;i++){
+              if(chave.equals(reg1[i])){
+                  p1 = i;
+                  break;
+              }
+          }
+          for(i=0;i<reg2.length;i++){
+              if(chave.equals(reg2[i])){
+                  p2 = i;
+                  break;
+              }
+          }
+          matchPair(reg1[0],reg2[0],registro1,registro2,jedis,"OKPOS");
+          if(p1-p2 > parmDist || p1-p2 < -parmDist ){
+              lOk = false;
+          }if(lOk){
+               jedis.select(5);
+               jedis.set("VPOS/"+num2+"/"+registro1+"/"+registro2, "1");
+               matchPair(reg1[0],reg2[0],registro1,registro2,jedis,"VVPOS");
+               jedis.select(1);
+               jedis.set("HORARIO2",Long.toString(d.getTime()));
+              _collector.emit(tuple, new Values(registro1,registro2));
+          }else{
+              matchPair(reg1[0],reg2[0],registro1,registro2,jedis,"VFPOS");
+              jedis.select(1);
+              jedis.set("HORARIO2",Long.toString(d.getTime()));
+          }
+      }
+      pool.returnResource(jedis);
+  }
+
+  public boolean matchPair(String key1,String key2,String string1,String string2,Jedis jedis,String valid){
+    String[] s1 = key1.split("-");
+    String[] s2 = key2.split("-");
+    Boolean par = false;
+    jedis.select(5);
+
+    if(s1[1].equals(s2[1])){
+      if(s1[2].equals("org") && s2[2].equals("dup")){
+        jedis.set(valid+"|"+key1+"|"+key2, string1+"|"+string2);
+      }
+      if(s1[2].equals("dup") && s2[2].equals("org")){
+        jedis.set(valid+"|"+key2+"|"+key1, string2+"|"+string1);
+      }
     }
+    return par;
+  }
 
-    @Override
-    public void execute(Tuple tuple)
-    {
-        Jedis jedis      = pool.getResource();
-        int parmSize     = 3;
-        int parmDist     = 3;
-        String separador = " ";
-
-        String chave     = tuple.getString(0);
-        String registro1 = tuple.getString(1);
-        String registro2 = tuple.getString(2);
-        String[] reg1    = registro1.split(separador);
-        String[] reg2    = registro2.split(separador);
-        boolean lOk      = true;
-        int i,j,p1=0,p2=9999;
-
-        jedis.select(8);
-        jedis.set("ORI",tuple.getString(0)+"///"+tuple.getString(1)+"///"+tuple.getString(2));
-        jedis.set("TAM",Integer.toString(reg1.length)+ " "+Integer.toString(reg2.length)+ " " + Integer.toString(parmSize) );
-        if(reg1.length - reg2.length >= parmSize || reg1.length - reg2.length <= -parmSize) //Filtro de tamanho
-            lOk = false;
-        if(lOk){
-            for(i=0;i<reg1.length;i++){
-                if(chave.equals(reg1[i])){
-                    p1 = i;
-                    break;
-                }
-            }
-            for(i=0;i<reg2.length;i++){
-                if(chave.equals(reg2[i])){
-                    p2 = i;
-                    break;
-                }
-            }
-            if(p1-p2 > parmDist || p1-p2 < -parmDist )
-                lOk = false;
-            if(lOk){
-                 jedis.select(8);
-                 jedis.set("PAR",registro1+"/"+registro2);
-                _collector.emit(tuple, new Values(registro1,registro2));
-            }else{
-                jedis.select(8);
-                jedis.set("FAL",registro1+"/"+registro2+"/"+Integer.toString(p1)+"/"+Integer.toString(p2));
-            }
-        }
-        pool.returnResource(jedis);
-    }
-
-    public void declareOutputFields(OutputFieldsDeclarer declarer)
-    {
-      declarer.declare(new Fields("reg1","reg2"));
-      // nothing to add - since it is the final bolt
-    }
+  public void declareOutputFields(OutputFieldsDeclarer declarer)
+  {
+    declarer.declare(new Fields("reg1","reg2"));
+    // nothing to add - since it is the final bolt
+  }
 }

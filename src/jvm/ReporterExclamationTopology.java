@@ -37,6 +37,7 @@ import redis.clients.jedis.JedisPubSub;
 
 import java.util.Map;
 import java.util.*;
+import java.text.DateFormat;
 
 import udacity.storm.spout.RandomSentenceSpout;
 
@@ -46,6 +47,7 @@ public class ReporterExclamationTopology {
   {
     OutputCollector _collector;
     protected JedisPool pool;
+    protected int c;
 
     @Override
     public void prepare(
@@ -64,6 +66,11 @@ public class ReporterExclamationTopology {
       jedis.flushDB();
       jedis.select(3);
       jedis.flushDB();
+      jedis.flushAll();
+
+      Date d = new Date();
+      jedis.select(1);
+      jedis.set("HORARIO1",Long.toString(d.getTime()));
 
       pool.returnResource(jedis);
 
@@ -86,8 +93,8 @@ public class ReporterExclamationTopology {
       idReg = reg[0];
       jedis.select(1);
       jedis.set(idReg,sentence);
-      jedis.select(2);
-      jedis.set(idReg,sentence);
+//      jedis.select(2);
+//      jedis.set(idReg,sentence);
 
 
       ocorrencias = new HashMap<String, Integer>();
@@ -104,38 +111,16 @@ public class ReporterExclamationTopology {
 
                 }else
                     jedis.set(reg[i],idReg);
+                jedis.select(6);
+                String num1 = Integer.toString(c);
+                jedis.set("COUNTI", num1);
+                c++;
+                jedis.select(3);
                 _collector.emit(tuple, new Values(reg[i]+separador+jedis.get(reg[i])));
               }
           }
       }
 
-
-/*      jedis.select(1);
-      jedis.blpop(30,mutex);
-      idReg = Integer.toString(Integer.valueOf(jedis.dbSize().toString())+1);
-      jedis.lpush(mutex,mutex);
-      jedis.set(idReg,idReg+separador+sentence);
-      jedis.select(2);
-      jedis.set(idReg,idReg+separador+sentence);
-  //    jedis.lpush("R"+idReg,"R"+idReg);
-
-
-      ocorrencias = new HashMap<String, Integer>();
-      for (i = 0;i<reg.length; i++) {
-          if (ocorrencias.get(reg[i]) == null) {
-              ocorrencias.put(reg[i], 1);
-              jedis.select(2);
-              jedis.zincrby("rank",1,reg[i]);
-              if (jedis.exists(reg[i])){
-                  jedis.select(3);
-                  jedis.append(reg[i]," "+idReg);
-
-              }else
-                  jedis.set(reg[i],idReg);
-              _collector.emit(tuple, new Values(reg[i]+separador+jedis.get(reg[i])));
-          }
-      }
-*/
       pool.returnResource(jedis);
     }
 
@@ -155,13 +140,13 @@ public class ReporterExclamationTopology {
 
     builder.setBolt("bolt-indice", new IndiceBolt(), 1).shuffleGrouping("entrada");
 
-    builder.setBolt("bolt-processa", new ProcessaBolt(), 1).shuffleGrouping("bolt-indice");
+    builder.setBolt("bolt-processa", new ProcessaBolt(), 10).shuffleGrouping("bolt-indice");
 
-    builder.setBolt("bolt-tamanho", new SizePositionBolt(), 1).shuffleGrouping("bolt-processa");
+    builder.setBolt("bolt-tamanho", new SizePositionBolt(), 10).shuffleGrouping("bolt-processa");
 
-    builder.setBolt("bolt-prefixo", new PrefixBolt(), 1).shuffleGrouping("bolt-tamanho");
+    builder.setBolt("bolt-prefixo", new PrefixBolt(), 10).shuffleGrouping("bolt-tamanho");
 
-    builder.setBolt("bolt-sufixo", new SufixBolt(), 1).shuffleGrouping("bolt-prefixo");
+    builder.setBolt("bolt-sufixo", new SufixBolt(), 10).shuffleGrouping("bolt-prefixo");
 
     Config conf = new Config();
 

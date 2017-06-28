@@ -6,5 +6,6 @@ udacity/storm/ReporterExclamationTopology.class
 udacity/storm/ExclamationTopology.class
 udacity/storm/ReportBolt.class
 udacity/storm/PrefixBolt.class
+edu/uffs/storminho/Variables.class
 udacity/storm/ExclamationTopology$ExclamationBolt.class
 udacity/storm/SufixBolt.class
