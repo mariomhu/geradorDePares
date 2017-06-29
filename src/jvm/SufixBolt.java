@@ -51,6 +51,7 @@ public class SufixBolt extends BaseRichBolt
   @Override
   public void execute(Tuple tuple)
   {
+      double parmG     = 0.6;
       Jedis jedis      = pool.getResource();
       int offSet       = 7;
 
@@ -66,7 +67,7 @@ public class SufixBolt extends BaseRichBolt
 
       int parmNTerms;
       int parmDist;
-      double parmFreq  = 0.3;//porcentagem
+      double parmFreq  = parmG;//porcentagem
 
       int minSize = 0,freq = 0;
       int sufSize1, sufSize2, i, j;
@@ -80,16 +81,17 @@ public class SufixBolt extends BaseRichBolt
       int posExiste = -1;
       int randomMax;
 
-      offSet = (int) Math.ceil(reg1.length*(1-0.3));
-
+      offSet = (int) Math.ceil(reg1.length*(1-parmG));
+      if (offSet == reg1.length)
+          offSet = reg1.length - 1;
       minSize = reg1.length - offSet;
 
       randomMax = reg1.length - offSet;
 
-      parmNTerms = (int) Math.ceil(randomMax*(1-0.3));
-      parmDist = parmNTerms;
+      parmNTerms = (int) Math.ceil(randomMax*(parmG));
+      parmDist = (int) Math.ceil(randomMax*(1-parmG));
 
-              pos = new int[parmNTerms];
+          pos = new int[parmNTerms];
 
           for(i=0;i<pos.length;i++){
               rand = gerador.nextInt(randomMax)+offSet;

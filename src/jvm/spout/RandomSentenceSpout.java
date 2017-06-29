@@ -25,7 +25,7 @@ public class RandomSentenceSpout extends BaseRichSpout {
     //_rand = new Random();
 
     try {
-      reader = new BufferedReader(new FileReader("/home/db-user/repositório/geradorDePares/src/jvm/spout/teste01"));
+      reader = new BufferedReader(new FileReader("/home/db-user/repositório/geradorDePares/src/jvm/spout/teste_mario2"));
     } catch (Exception e) {
       throw new RuntimeException(e);
     }

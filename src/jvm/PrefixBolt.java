@@ -50,10 +50,11 @@ public class PrefixBolt extends BaseRichBolt
   @Override
   public void execute(Tuple tuple)
   {
+      double parmG     = 0.6;
       Jedis jedis      = pool.getResource();
       int prefSize     = 7;
       double size      = 7;
-      double parmFreq  = 0.3;//0.1;//porcentagem
+      double parmFreq  = parmG;//0.1;//porcentagem
       double frequencia;
       String separador = " ";
       String registro1 = tuple.getString(0);
@@ -64,9 +65,13 @@ public class PrefixBolt extends BaseRichBolt
       int minPre;
       Date d = new Date();
 
-      min1 = (int) Math.ceil(reg1.length*(1-0.3));
+      min1 = (int) Math.ceil(reg1.length*(1-parmG));
 
-      min2 = (int) Math.ceil(reg2.length*(1-0.3));
+      min2 = (int) Math.ceil(reg2.length*(1-parmG));
+      if (min1 < 2)
+          min1 = 2;
+      if (min2 < 2)
+          min2 = 2;
 
       for(i=1;i<min1;i++){
           for(j=1;j<min2;j++){

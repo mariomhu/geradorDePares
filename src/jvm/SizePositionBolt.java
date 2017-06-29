@@ -52,6 +52,7 @@ public class SizePositionBolt extends BaseRichBolt
   @Override
   public void execute(Tuple tuple)
   {
+      double parmG     = 0.6;
       Jedis jedis      = pool.getResource();
 
       String separador = " ";
@@ -70,7 +71,7 @@ public class SizePositionBolt extends BaseRichBolt
       else
         tamMax = reg2.length;
 
-      int parmSize = (int) (tamMax*(1-0.3));
+      int parmSize = (int) (tamMax*(1-parmG));
       int parmDist = parmSize;
 
       jedis.select(2);
@@ -101,7 +102,7 @@ public class SizePositionBolt extends BaseRichBolt
               lOk = false;
           }if(lOk){
                jedis.select(5);
-               jedis.set("VPOS/"+num2+"/"+registro1+"/"+registro2, "1");
+               jedis.set("VPOS/"+registro1+"/"+registro2, "1");
                matchPair(reg1[0],reg2[0],registro1,registro2,jedis,"VVPOS");
                jedis.select(1);
                jedis.set("HORARIO2",Long.toString(d.getTime()));
