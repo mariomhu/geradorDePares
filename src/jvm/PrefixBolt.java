@@ -50,7 +50,7 @@ public class PrefixBolt extends BaseRichBolt
   @Override
   public void execute(Tuple tuple)
   {
-      double parmG     = 0.6;
+      double parmG     = 1;
       Jedis jedis      = pool.getResource();
       int prefSize     = 7;
       double size      = 7;
@@ -83,25 +83,22 @@ public class PrefixBolt extends BaseRichBolt
         minPre = min2;
       else
         minPre = min1;
+      minPre--;
       frequencia = freq;
       jedis.select(1);
       jedis.set("HORARIO2",Long.toString(d.getTime()));
       jedis.select(6);
-      if(frequencia > 0)
-        jedis.set("FREQ",Double.toString(frequencia));
 
-      if(frequencia/(minPre) > parmFreq){
-/*            int qtd;
-          String strAux;
-          strAux = jedis.get("QTD1");
-          qtd = Integer.valueOf(strAux);
-          jedis.set("QTD1",Integer.toString(qtd+1));
-          jedis.set("PAR1",registro1+"/"+registro2);*/
+      if ( reg1[0].equals("rec-188-org")|| reg2[0].equals("rec-188-org") ) {
+          jedis.set("VALORES", Double.toString(frequencia)+" "+Integer.toString(minPre));
+      }
+
+      if(frequencia/(minPre) >= parmFreq){
         jedis.set("V/"+registro1+"/"+registro2, "1");
-          matchPair(reg1[0],reg2[0],registro1,registro2+">"+Double.toString(frequencia/minPre)+" "+Double.toString(parmFreq),jedis,"VVPRE");
+          matchPair(reg1[0],reg2[0],registro1,registro2,jedis,"VV");
           _collector.emit(tuple, new Values(registro1,registro2));
       }else{
-          matchPair(reg1[0],reg2[0],registro1,registro2,jedis,"VF");
+          matchPair(reg1[0],reg2[0],registro1,registro2,jedis,"FV");
       }
       pool.returnResource(jedis);
   }

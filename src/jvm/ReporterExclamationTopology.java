@@ -104,7 +104,7 @@ public class ReporterExclamationTopology {
               jedis.select(2);
               jedis.zincrby("rank",1,reg[i]);
               jedis.select(3);
-              if(reg[i].length() >= 3){
+              if(reg[i].length() > 3){
                 if (jedis.exists(reg[i])){
 
                     jedis.append(reg[i]," "+idReg);
@@ -151,7 +151,7 @@ public class ReporterExclamationTopology {
     Config conf = new Config();
 
     // set the config in debugging mode
-    conf.setDebug(true);
+    conf.setDebug(false);
 
     if (args != null && args.length > 0) {
       // run it in a live cluster
@@ -173,13 +173,13 @@ public class ReporterExclamationTopology {
       cluster.submitTopology("exclamation", conf, builder.createTopology());
 
       // let the topology run for 30 seconds. note topologies never terminate!
-      Thread.sleep(30000000);
+  //    Thread.sleep(30000000);
 
       // kill the topology
-      cluster.killTopology("exclamation");
+//      cluster.killTopology("exclamation");
 
       // we are done, so shutdown the local cluster
-      cluster.shutdown();
+//      cluster.shutdown();
     }
   }
 }

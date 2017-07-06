@@ -75,12 +75,7 @@ public class ProcessaBolt extends BaseRichBolt
 
        ocorrencias = new HashMap<String, Integer>();
 
-       jedis.select(6);
-       String num1 = Integer.toString(count);
-       jedis.set(num1+"/"+sentence, "1");
-       jedis.set("COUNTP",num1);
        count++;
-
 
        jedis.select(1);
        int cont = 1;
@@ -130,7 +125,6 @@ public class ProcessaBolt extends BaseRichBolt
       }
       jedis.select(1);
       jedis.set(info[0],saida1);
-
 
       if (regs.length >= 3){
           co++;

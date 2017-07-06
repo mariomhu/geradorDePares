@@ -51,9 +51,9 @@ public class SufixBolt extends BaseRichBolt
   @Override
   public void execute(Tuple tuple)
   {
-      double parmG     = 0.6;
+      double parmG     = 1;
       Jedis jedis      = pool.getResource();
-      int offSet       = 7;
+      int offSet;
 
       double frequencia;
       Date d = new Date();
@@ -84,6 +84,8 @@ public class SufixBolt extends BaseRichBolt
       offSet = (int) Math.ceil(reg1.length*(1-parmG));
       if (offSet == reg1.length)
           offSet = reg1.length - 1;
+      if (offSet < 1)
+          offSet = 1;
       minSize = reg1.length - offSet;
 
       randomMax = reg1.length - offSet;
@@ -108,33 +110,31 @@ public class SufixBolt extends BaseRichBolt
                   i--;
           }
 
-          jedis.select(8);
+          int contador =0;
           for(i=0;i<pos.length;i++){
-              for(j=pos[i]-parmDist;j<=pos[i]+parmDist;j++)
-                  if (pos[i] > 0 && pos[i] < reg1.length && j > 0 && j < reg2.length)
+              for(j=pos[i]-parmDist;j<=pos[i]+parmDist;j++){
+                  if (pos[i] > 0 && pos[i] < reg1.length && j > 0 && j < reg2.length){
                       if(reg1[pos[i]].equals(reg2[j])){
                           lFound = true;
                           encontrados++;
                           break;
                       }
+                  }
+              }
           }
 
-          String positions = "";
-          for(i=0;i<pos.length;i++){
-              positions += Integer.toString(pos[i]) + " ";
-          }
-
+          jedis.select(7);
           if((double)((double)encontrados/parmNTerms)>=parmFreq){
-            jedis.set("KEYSOK/"+reg1[0]+"/"+reg2[0], "1");
+              jedis.set("V/"+reg1[0]+"/"+reg2[0], "1");
 
-              matchPair(reg1[0],reg2[0],registro1,registro2,jedis,"V");
+              matchPair(reg1[0],reg2[0],registro1,registro2,jedis,"VV");
               jedis.select(1);
               jedis.set("HORARIO2",Long.toString(d.getTime()));
               _collector.emit(tuple, new Values(registro1,registro2));
           }else{
             jedis.select(1);
             jedis.set("HORARIO2",Long.toString(d.getTime()));
-            matchPair(reg1[0],reg2[0],registro1,registro2,jedis,"F");
+            matchPair(reg1[0],reg2[0],registro1,registro2,jedis,"FV");
           }
     //  }
     //  else

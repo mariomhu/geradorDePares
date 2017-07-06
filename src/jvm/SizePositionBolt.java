@@ -52,7 +52,7 @@ public class SizePositionBolt extends BaseRichBolt
   @Override
   public void execute(Tuple tuple)
   {
-      double parmG     = 0.6;
+      double parmG     = 1;
       Jedis jedis      = pool.getResource();
 
       String separador = " ";
@@ -77,7 +77,6 @@ public class SizePositionBolt extends BaseRichBolt
       jedis.select(2);
       String num1 = Integer.toString(countS1);
       jedis.set("OKTAM/"+num1+"/"+registro1+"/"+registro2, "1");
-      jedis.set("COUNTS1",num1);
       countS1++;
 
       matchPair(reg1[0],reg2[0],registro1,registro2,jedis,"R");
@@ -97,18 +96,18 @@ public class SizePositionBolt extends BaseRichBolt
                   break;
               }
           }
-          matchPair(reg1[0],reg2[0],registro1,registro2,jedis,"OKPOS");
+
           if(p1-p2 > parmDist || p1-p2 < -parmDist ){
               lOk = false;
           }if(lOk){
                jedis.select(5);
-               jedis.set("VPOS/"+registro1+"/"+registro2, "1");
-               matchPair(reg1[0],reg2[0],registro1,registro2,jedis,"VVPOS");
+               jedis.set("V/"+registro1+"/"+registro2, "1");
+               matchPair(reg1[0],reg2[0],registro1,registro2,jedis,"VV");
                jedis.select(1);
                jedis.set("HORARIO2",Long.toString(d.getTime()));
               _collector.emit(tuple, new Values(registro1,registro2));
           }else{
-              matchPair(reg1[0],reg2[0],registro1,registro2,jedis,"VFPOS");
+              matchPair(reg1[0],reg2[0],registro1,registro2,jedis,"FV");
               jedis.select(1);
               jedis.set("HORARIO2",Long.toString(d.getTime()));
           }
