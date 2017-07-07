@@ -51,7 +51,7 @@ public class SufixBolt extends BaseRichBolt
   @Override
   public void execute(Tuple tuple)
   {
-      double parmG     = 1;
+      double parmG     = Variables.TRASHOLD;
       Jedis jedis      = pool.getResource();
       int offSet;
 
@@ -81,7 +81,7 @@ public class SufixBolt extends BaseRichBolt
       int posExiste = -1;
       int randomMax;
 
-      offSet = (int) Math.ceil(reg1.length*(1-parmG));
+      offSet = (int) Math.floor(reg1.length*(1-parmG));
       if (offSet == reg1.length)
           offSet = reg1.length - 1;
       if (offSet < 1)
@@ -92,57 +92,61 @@ public class SufixBolt extends BaseRichBolt
 
       parmNTerms = (int) Math.ceil(randomMax*(parmG));
       parmDist = (int) Math.ceil(randomMax*(1-parmG));
+      if (parmNTerms < 1)
+          parmNTerms = 1;
+      pos = new int[parmNTerms];
 
-          pos = new int[parmNTerms];
+      for(i=0;i<pos.length;i++){
+          rand = gerador.nextInt(randomMax)+offSet;
+          posExiste = -1;
+          for(j=0;j<i;j++){
+              if(rand == pos[j]){
+                  posExiste = j;
+                  break;
+              }
+          }
+          if(posExiste == -1)
+              pos[i] = rand;
+          else
+              i--;
+      }
 
-          for(i=0;i<pos.length;i++){
-              rand = gerador.nextInt(randomMax)+offSet;
-              posExiste = -1;
-              for(j=0;j<i;j++){
-                  if(rand == pos[j]){
-                      posExiste = j;
+      int contador =0;
+      String position = "";
+      for(i=0;i<pos.length;i++){
+          for(j=pos[i]-parmDist;j<=pos[i]+parmDist;j++){
+              if (pos[i] > 0 && pos[i] < reg1.length && j > 0 && j < reg2.length){
+                  position += "["+reg1[pos[i]]+"|"+reg2[j]+"]";
+                  if(reg1[pos[i]].equals(reg2[j])){
+                      lFound = true;
+                      encontrados++;
                       break;
                   }
               }
-              if(posExiste == -1)
-                  pos[i] = rand;
-              else
-                  i--;
           }
+      }
 
-          int contador =0;
-          for(i=0;i<pos.length;i++){
-              for(j=pos[i]-parmDist;j<=pos[i]+parmDist;j++){
-                  if (pos[i] > 0 && pos[i] < reg1.length && j > 0 && j < reg2.length){
-                      if(reg1[pos[i]].equals(reg2[j])){
-                          lFound = true;
-                          encontrados++;
-                          break;
-                      }
-                  }
-              }
-          }
 
-          jedis.select(7);
-          if((double)((double)encontrados/parmNTerms)>=parmFreq){
-              jedis.set("V/"+reg1[0]+"/"+reg2[0], "1");
+      jedis.select(7);
+      if((double)((double)encontrados/parmNTerms)>=parmFreq){
+          save(reg1[0],reg2[0],jedis,"V");
+          jedis.set("V/"+reg1[0]+"/"+reg2[0], "1");
 
-              matchPair(reg1[0],reg2[0],registro1,registro2,jedis,"VV");
-              jedis.select(1);
-              jedis.set("HORARIO2",Long.toString(d.getTime()));
-              _collector.emit(tuple, new Values(registro1,registro2));
-          }else{
-            jedis.select(1);
-            jedis.set("HORARIO2",Long.toString(d.getTime()));
-            matchPair(reg1[0],reg2[0],registro1,registro2,jedis,"FV");
-          }
-    //  }
-    //  else
-     //     pos = new int[1];
+          matchPair(reg1[0],reg2[0],registro1,registro2,jedis,"VV");
+          jedis.select(1);
+          jedis.set("HORARIO2",Long.toString(d.getTime()));
+          _collector.emit(tuple, new Values(registro1,registro2));
+      }else{
+        jedis.select(1);
+        jedis.set("HORARIO2",Long.toString(d.getTime()));
+        if (matchPair(reg1[0],reg2[0],registro1,registro2,jedis,"FV"))
+            jedis.set("PARMS",registro1+"/"+position+" "+Integer.toString(encontrados)+" "+Integer.toString(parmNTerms)+" "+Double.toString(parmFreq)+" "+Integer.toString(parmDist)+" "+Integer.toString(reg1.length - offSet));
+
+      }
       pool.returnResource(jedis);
   }
 
-  public void matchPair(String key1,String key2,String string1,String string2,Jedis jedis,String valid){
+  public boolean matchPair(String key1,String key2,String string1,String string2,Jedis jedis,String valid){
     String[] s1 = key1.split("-");
     String[] s2 = key2.split("-");
     jedis.select(7);
@@ -150,11 +154,27 @@ public class SufixBolt extends BaseRichBolt
     if(s1[1].equals(s2[1])){
       if(s1[2].equals("org") && s2[2].equals("dup")){
         jedis.set(valid+"|"+key1+"|"+key2, string1+"|"+string2);
+//          jedis.set(valid+"|"+key1+"|"+key2, string1+"|"+string2);
+        return true;
       }
       if(s1[2].equals("dup") && s2[2].equals("org")){
         jedis.set(valid+"|"+key2+"|"+key1, string2+"|"+string1);
+        return true;
       }
     }
+    return false;
+  }
+  public void save(String key1,String key2,Jedis jedis,String valid){
+    String[] s1 = key1.split("-");
+    String[] s2 = key2.split("-");
+    jedis.select(7);
+
+      if(s1[2].equals("org")){
+        jedis.set(valid+"|"+key1+"|"+key2, "1");
+      }
+      if(s1[2].equals("dup") ){
+        jedis.set(valid+"|"+key2+"|"+key1, "1");
+      }
   }
 
   public void declareOutputFields(OutputFieldsDeclarer declarer)

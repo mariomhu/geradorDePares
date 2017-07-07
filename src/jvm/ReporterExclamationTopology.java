@@ -171,7 +171,7 @@ public class ReporterExclamationTopology {
 
       // submit the topology to the local cluster
       cluster.submitTopology("exclamation", conf, builder.createTopology());
-
+      System.out.println("\n\n--------------TERMINO TOPOLOGIA--------------\n\n");
       // let the topology run for 30 seconds. note topologies never terminate!
   //    Thread.sleep(30000000);
 

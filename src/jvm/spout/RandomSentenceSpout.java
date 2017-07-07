@@ -14,6 +14,8 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 
+import udacity.storm.Variables;
+
 public class RandomSentenceSpout extends BaseRichSpout {
   SpoutOutputCollector _collector;
   //Random _rand;
@@ -25,7 +27,7 @@ public class RandomSentenceSpout extends BaseRichSpout {
     //_rand = new Random();
 
     try {
-      reader = new BufferedReader(new FileReader("/home/db-user/repositório/geradorDePares/src/jvm/spout/teste_mario_espacos"));
+      reader = new BufferedReader(new FileReader(Variables.FILEPATH));
     } catch (Exception e) {
       throw new RuntimeException(e);
     }

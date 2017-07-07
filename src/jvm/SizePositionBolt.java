@@ -52,7 +52,7 @@ public class SizePositionBolt extends BaseRichBolt
   @Override
   public void execute(Tuple tuple)
   {
-      double parmG     = 1;
+      double parmG     = Variables.TRASHOLD;
       Jedis jedis      = pool.getResource();
 
       String separador = " ";

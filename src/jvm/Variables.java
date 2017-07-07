@@ -1,10 +1,11 @@
-package edu.uffs.storminho;
+package udacity.storm;
 
 public class Variables {
 	/* TrainingCreator =======================================================*/
-	public static final double TRASHOLD = 0.3;
+	public static final double TRASHOLD = 0.1;
+	public static final String FILEPATH = "/home/db-user/repositório/geradorDePares/src/jvm/spout/teste_mario10kgen";
 	//==========================================================================
-	
+
     /* TrainingCreator =======================================================*/
     //Name of the output's file
     public static final String TRAININGSET_OUTPUT_FILE = "trainingSet.arff";

@@ -50,7 +50,7 @@ public class PrefixBolt extends BaseRichBolt
   @Override
   public void execute(Tuple tuple)
   {
-      double parmG     = 1;
+      double parmG     = Variables.TRASHOLD;
       Jedis jedis      = pool.getResource();
       int prefSize     = 7;
       double size      = 7;
@@ -94,6 +94,7 @@ public class PrefixBolt extends BaseRichBolt
       }
 
       if(frequencia/(minPre) >= parmFreq){
+          save(reg1[0],reg2[0],jedis,"V");
         jedis.set("V/"+registro1+"/"+registro2, "1");
           matchPair(reg1[0],reg2[0],registro1,registro2,jedis,"VV");
           _collector.emit(tuple, new Values(registro1,registro2));
@@ -116,6 +117,18 @@ public class PrefixBolt extends BaseRichBolt
         jedis.set(valid+"|"+key2+"|"+key1, string2+"|"+string1);
       }
     }
+  }
+  public void save(String key1,String key2,Jedis jedis,String valid){
+    String[] s1 = key1.split("-");
+    String[] s2 = key2.split("-");
+    jedis.select(6);
+
+      if(s1[2].equals("org")){
+        jedis.set(valid+"|"+key1+"|"+key2, "1");
+      }
+      if(s1[2].equals("dup") ){
+        jedis.set(valid+"|"+key2+"|"+key1, "1");
+      }
   }
 
   public void declareOutputFields(OutputFieldsDeclarer declarer)
